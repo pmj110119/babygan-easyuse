@@ -78,10 +78,10 @@ model_scale = int(2*(math.log(1024,2)-1))
 
 
 
-person_age = 30
+person_age = 28.0
 intensity = -((person_age/5)-6)
 imgA_list = glob.glob('aligned_images/A_*.png')
-imgB_list = glob.glob('aligned_images/A_*.png')
+imgB_list = glob.glob('aligned_images/B_*.png')
 
 for imgA_path in imgA_list:
     for imgB_path in imgB_list:
@@ -89,16 +89,16 @@ for imgA_path in imgA_list:
 
 
 
-        A_id = os.path.basename(imgA_path).split('A_')[0].split(('.png'))[0]
-        B_id = os.path.basename(imgB_path).split('B_')[0].split(('.png'))[0]
+        A_id = os.path.basename(imgA_path).split('A_')[-1].split(('_01.png'))[0]
+        B_id = os.path.basename(imgB_path).split('B_')[-1].split(('_01.png'))[0]
         saved_path = 'result/'+A_id+'-'+B_id
         saved_merge_path = saved_path+'/merge'
         if not os.path.exists(saved_path):
             os.makedirs(saved_path)
         if not os.path.exists(saved_merge_path):
             os.makedirs(saved_merge_path)
-        shutil.copyfile(imgA_path,saved_path)
-        shutil.copyfile(imgB_path, saved_path)
+        shutil.copy2(imgA_path,saved_path)
+        shutil.copy2(imgB_path, saved_path)
 
         imgA = Image.open(imgA_path)
         imgB = Image.open(imgB_path)
@@ -124,4 +124,5 @@ for imgA_path in imgA_list:
         #     #face.save(str(person_age)+'_'+str(weight)+'.png')
         #     #cv2.imwrite(str(weight)+'.png',np.array(face))
             buff.append(img)
+        face.save(saved_path + '/merge_' + str(weight) + '.png')
         gif = imageio.mimsave(saved_path+'/merge.gif', buff, 'GIF', duration=0.2)
