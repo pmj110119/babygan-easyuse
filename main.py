@@ -1,7 +1,7 @@
 #@title <b><font color="red" size="+3">←</font><font color="black" size="+3"> Clone Git repository and install all requirements</font></b>
 #%tensorflow_version 1.x
 
-import os
+import os,glob,shutil
 import cv2
 import math
 import pickle
@@ -17,39 +17,6 @@ import matplotlib.pyplot as plt
 #%matplotlib inline
 warnings.filterwarnings("ignore")
 
-def get_watermarked(pil_image: Image) -> Image:
-  try:
-    image = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
-    (h, w) = image.shape[:2]
-    image = np.dstack([image, np.ones((h, w), dtype="uint8") * 255])
-    pct = 0.08
-    full_watermark = cv2.imread('media/logo.png', cv2.IMREAD_UNCHANGED)
-    (fwH, fwW) = full_watermark.shape[:2]
-    wH = int(pct * h*2)
-    wW = int((wH * fwW) / fwH*0.1)
-    watermark = cv2.resize(full_watermark, (wH, wW), interpolation=cv2.INTER_AREA)
-    overlay = np.zeros((h, w, 4), dtype="uint8")
-    # (wH, wW) = watermark.shape[:2]
-    # overlay[h - wH - 10 : h - 10, 10 : 10 + wW] = watermark
-    output = image.copy()
-    #cv2.addWeighted(overlay, 0.5, output, 1.0, 0, output)
-    rgb_image = cv2.cvtColor(output, cv2.COLOR_BGR2RGB)
-    return Image.fromarray(rgb_image)
-  except: return pil_image
-
-def generate_final_images(latent_vector, direction, coeffs, i):
-    new_latent_vector = latent_vector.copy()
-    new_latent_vector[:8] = (latent_vector + coeffs*direction)[:8]
-    new_latent_vector = new_latent_vector.reshape((1, 18, 512))
-    generator.set_dlatents(new_latent_vector)
-    img_array = generator.generate_images()[0]
-    img = PIL.Image.fromarray(img_array, 'RGB')
-    if size[0] >= 512: img = get_watermarked(img)
-    img_path = "for_animation/" + str(i) + ".png"
-    img.thumbnail(animation_size, PIL.Image.ANTIALIAS)
-    img.save(img_path)
-    face_img.append(imageio.imread(img_path))
-    return img
 
 
 
@@ -60,7 +27,6 @@ def generate_final_image(latent_vector, direction, coeffs):
     generator.set_dlatents(new_latent_vector)
     img_array = generator.generate_images()[0]
     img = PIL.Image.fromarray(img_array, 'RGB')
-    if size[0] >= 512: img = get_watermarked(img)
     img.thumbnail(size, PIL.Image.ANTIALIAS)
     #img.save("face.png")
     # if download_image == True: files.download("face.png")
@@ -109,40 +75,53 @@ generator = Generator(Gs_network, batch_size=1, randomize_noise=False)
 model_scale = int(2*(math.log(1024,2)-1))
 
 
-if len(os.listdir('generated_images')) >= 2:
-  first_face = np.load('latent_representations/A1_01.npy')
-  second_face = np.load('latent_representations/C0_01.npy')
-  print("Generation of latent representation is complete! Now comes the fun part.")
-else: raise ValueError('Something wrong. It may be impossible to read the face in the photos. Upload other photos and try again.')
 
 
 
-imgA = Image.open('aligned_images/A1_01.png')
-imgB = Image.open('aligned_images/C0_01.png')
+person_age = 30
+intensity = -((person_age/5)-6)
+imgA_list = glob.glob('aligned_images/A_*.png')
+imgB_list = glob.glob('aligned_images/A_*.png')
 
-for weight in [0.2,0.4,0.6,0.8]:
-    buff = []
-#weight = 0.7
-    for person_age in np.linspace(1,15,5):
-
-        hybrid_face = ((1-weight)*first_face)+(weight*second_face)
-
-        #person_age = 30
-        intensity = -((person_age/5)-6)
+for imgA_path in imgA_list:
+    for imgB_path in imgB_list:
+        buff = []
 
 
-        #@markdown **Resolution of the downloaded image:**
-        resolution = "512" #@param [256, 512, 1024]
-        size = int(resolution), int(resolution)
 
-        face = generate_final_image(hybrid_face, age_direction, intensity)
-        img = np.asarray(face)
-        # cv2.cvtColor(np.asarray(face), cv2.COLOR_RGB2BGR)
-        #plt.imsave()
-        buff.append(img)
-        plot_three_images(face, fs=15,imgA=imgA,imgB=imgB)
-        plt.savefig(str(round(person_age,1))+'_'+str(weight)+'.png')
-        plt.clf()
-        #face.save(str(person_age)+'_'+str(weight)+'.png')
-        #cv2.imwrite(str(weight)+'.png',np.array(face))
-    gif = imageio.mimsave('face_'+str(weight)+'.gif', buff, 'GIF', duration=0.2)
+        A_id = os.path.basename(imgA_path).split('A_')[0].split(('.png'))[0]
+        B_id = os.path.basename(imgB_path).split('B_')[0].split(('.png'))[0]
+        saved_path = 'result/'+A_id+'-'+B_id
+        saved_merge_path = saved_path+'/merge'
+        if not os.path.exists(saved_path):
+            os.makedirs(saved_path)
+        if not os.path.exists(saved_merge_path):
+            os.makedirs(saved_merge_path)
+        shutil.copyfile(imgA_path,saved_path)
+        shutil.copyfile(imgB_path, saved_path)
+
+        imgA = Image.open(imgA_path)
+        imgB = Image.open(imgB_path)
+
+        first_face = np.load('latent_representations/'+os.path.basename(imgA_path).split('.png')[0]+'.npy')
+        second_face = np.load('latent_representations/'+os.path.basename(imgB_path).split('.png')[0]+'.npy')
+
+        for weight in np.linspace(0.01,0.5,30):
+
+            hybrid_face = ((1-weight)*first_face)+(weight*second_face)
+            resolution = "512" #@param [256, 512, 1024]
+            size = int(resolution), int(resolution)
+
+            face = generate_final_image(hybrid_face, age_direction, intensity)
+            face.save(saved_merge_path+ '/merge_' + str(weight) + '.png')
+
+            img = np.asarray(face)
+
+
+        #     plot_three_images(face, fs=15,imgA=imgA,imgB=imgB)
+        #     plt.savefig(str(round(person_age,1))+'_'+str(weight)+'.png')
+        #     plt.clf()
+        #     #face.save(str(person_age)+'_'+str(weight)+'.png')
+        #     #cv2.imwrite(str(weight)+'.png',np.array(face))
+            buff.append(img)
+        gif = imageio.mimsave(saved_path+'/merge.gif', buff, 'GIF', duration=0.2)

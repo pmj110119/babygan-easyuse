@@ -21,7 +21,7 @@ if __name__ == "__main__":
     python align_images.py /raw_images /aligned_images
     """
     parser = argparse.ArgumentParser(description='Align faces from input images', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--raw_dir', default='father_image', help='Directory with raw images for face alignment')
+    parser.add_argument('--raw_dir', default='mother_image', help='Directory with raw images for face alignment')
     parser.add_argument('--aligned_dir', default='aligned_images' ,help='Directory for storing aligned images')
     parser.add_argument('--output_size', default=1024, help='The dimension of images for input to the model', type=int)
     parser.add_argument('--x_scale', default=1, help='Scaling factor for x dimension', type=float)
@@ -40,14 +40,14 @@ if __name__ == "__main__":
         print('Aligning %s ...' % img_name)
         #try:
         raw_img_path = os.path.join(RAW_IMAGES_DIR, img_name)
-        fn = face_img_name = '%s_%02d.png' % (os.path.splitext(img_name)[0], 1)
+        fn = face_img_name = 'B_%s_%02d.png' % (os.path.splitext(img_name)[0], 1)
         if os.path.isfile(fn):
             continue
         print('Getting landmarks...')
         for i, face_landmarks in enumerate(landmarks_detector.get_landmarks(raw_img_path), start=1):
             try:
                 print('Starting face alignment...')
-                face_img_name = '%s_%02d.png' % (os.path.splitext(img_name)[0], i)
+                face_img_name = 'B_%s_%02d.png' % (os.path.splitext(img_name)[0], i)
                 aligned_face_path = os.path.join(ALIGNED_IMAGES_DIR, face_img_name)
                 image_align(raw_img_path, aligned_face_path, face_landmarks, output_size=args.output_size, x_scale=args.x_scale, y_scale=args.y_scale, em_scale=args.em_scale, alpha=args.use_alpha)
                 print('Wrote result %s' % aligned_face_path)

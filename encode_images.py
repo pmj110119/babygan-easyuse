@@ -48,7 +48,7 @@ def main():
     parser.add_argument('--resnet_image_size', default=256, help='Size of images for the Resnet model', type=int)
     parser.add_argument('--lr', default=0.25, help='Learning rate for perceptual model', type=float)
     parser.add_argument('--decay_rate', default=0.9, help='Decay rate for learning rate', type=float)
-    parser.add_argument('--iterations', default=150, help='Number of optimization steps for each batch', type=int)
+    parser.add_argument('--iterations', default=100, help='Number of optimization steps for each batch', type=int)
     parser.add_argument('--decay_steps', default=4, help='Decay steps for learning rate decay (as a percent of iterations)', type=float)
     parser.add_argument('--early_stopping', default=True, help='Stop early once training stabilizes', type=str2bool, nargs='?', const=True)
     parser.add_argument('--early_stopping_threshold', default=0.5, help='Stop after this threshold has been reached', type=float)
